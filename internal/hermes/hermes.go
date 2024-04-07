@@ -46,5 +46,8 @@ func (h *Hermes) Listen() {
 		}
 	})
 
-	server.Listen()
+	err := server.Listen()
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
 }
