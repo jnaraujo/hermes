@@ -43,10 +43,11 @@ func (s *Server) Listen() error {
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
+	buff := make([]byte, 32)
+
 	defer conn.Close()
 
 	for {
-		buff := make([]byte, 1024)
 
 		n, err := conn.Read(buff)
 		if err != nil {
