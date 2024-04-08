@@ -50,7 +50,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-
 		n, err := conn.Read(buff)
 		if err != nil {
 			if errors.Is(err, io.EOF) {

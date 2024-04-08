@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	total = 10_000
+	total = 100_000
 )
 
 var tcpPool pool.Pool = *pool.New(100, func() (net.Conn, error) {
@@ -58,12 +58,6 @@ func main() {
 }
 
 func send(d data.Data) *data.Data {
-	// conn, err := net.Dial("tcp", ":3333")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// defer conn.Close()
-
 	conn := tcpPool.Get()
 	defer tcpPool.Release(conn)
 
