@@ -1,8 +1,10 @@
 package tcp
 
 import (
+	"errors"
 	"fmt"
 	"hermes/internal/data"
+	"io"
 	"net"
 )
 
@@ -51,6 +53,11 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 		n, err := conn.Read(buff)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return
+			}
+
+			fmt.Println("Error reading:", err)
 			return
 		}
 
