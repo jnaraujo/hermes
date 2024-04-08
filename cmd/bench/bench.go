@@ -3,32 +3,37 @@ package main
 import (
 	"fmt"
 	"hermes/internal/data"
+	"hermes/internal/pool"
+	"log"
 	"net"
 	"sync"
 	"time"
 )
 
 const (
-	total = 100_000
-	conc  = 100
+	total = 10_000
 )
+
+var tcpPool pool.Pool = *pool.New(100, func() (net.Conn, error) {
+	return net.Dial("tcp", ":3333")
+})
 
 func main() {
 	var wg sync.WaitGroup
 
 	started := time.Now()
 
-	for i := 0; i < conc; i++ {
+	for i := 0; i < total; i++ {
 		wg.Add(1)
-
 		go func() {
 			defer wg.Done()
-			for i := 0; i < total/conc; i++ {
-				send(*data.New("SET", fmt.Sprintf("foo=bar-%d", i)))
+
+			data := send(*data.New("SET", fmt.Sprintf("foo-%d=bar-%d", i, i)))
+			if data.Content != fmt.Sprintf("foo-%d=bar-%d", i, i) {
+				log.Panic("ops set")
 			}
 		}()
 	}
-
 	wg.Wait()
 
 	fmt.Println("SET benchmark:")
@@ -36,17 +41,16 @@ func main() {
 
 	started = time.Now()
 
-	for i := 0; i < conc; i++ {
+	for i := 0; i < total; i++ {
 		wg.Add(1)
-
 		go func() {
 			defer wg.Done()
-			for i := 0; i < total/conc; i++ {
-				send(*data.New("GET", fmt.Sprintf("foo-%d", i)))
+			data := send(*data.New("GET", fmt.Sprintf("foo-%d", i)))
+			if data.Content != fmt.Sprintf("foo-%d=bar-%d", i, i) {
+				log.Panic("ops get")
 			}
 		}()
 	}
-
 	wg.Wait()
 
 	fmt.Println("GET benchmark:")
@@ -54,12 +58,14 @@ func main() {
 }
 
 func send(d data.Data) *data.Data {
-	conn, err := net.Dial("tcp", ":3333")
-	if err != nil {
-		fmt.Println(err)
-	}
+	// conn, err := net.Dial("tcp", ":3333")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// defer conn.Close()
 
-	defer conn.Close()
+	conn := tcpPool.Get()
+	defer tcpPool.Release(conn)
 
 	conn.Write([]byte(d.Decode()))
 
